@@ -1,0 +1,23 @@
+# Virtual environment
+.venv/
+venv/
+
+# Output directories
+outputs/
+data/
+
+# IDE/Editor
+.claude/
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Misc
+nul
+*.log
+.env
