@@ -57,7 +57,7 @@ def generate_onboarding_md(
     if repo_root and is_nextjs_app_router(repo_root):
         return _generate_nextjs_onboarding(repo_name, repo_root, run_commands, routes_md)
 
-    return _generate_generic_onboarding(repo_name)
+    return _generate_generic_onboarding(repo_name, repo_root, run_commands)
 
 
 def _generate_nextjs_onboarding(
@@ -138,16 +138,54 @@ Next.js App Router uses **file-based routing**:
 """
 
 
-def _generate_generic_onboarding(repo_name: str) -> str:
-    """Generate generic onboarding guide for non-Next.js repos."""
-    return f"""# Onboarding Guide: {repo_name}
+def _detect_project_type(repo_root: str) -> str:
+    """Detect if project is Python, Node.js, or unknown."""
+    if not repo_root:
+        return "unknown"
+
+    has_package_json = os.path.isfile(os.path.join(repo_root, "package.json"))
+    has_requirements = os.path.isfile(os.path.join(repo_root, "requirements.txt"))
+    has_pyproject = os.path.isfile(os.path.join(repo_root, "pyproject.toml"))
+    has_setup_py = os.path.isfile(os.path.join(repo_root, "setup.py"))
+
+    if has_requirements or has_pyproject or has_setup_py:
+        return "python"
+    if has_package_json:
+        return "node"
+    return "unknown"
+
+
+def _generate_generic_onboarding(repo_name: str, repo_root: str = None, run_commands: list = None) -> str:
+    """Generate generic onboarding guide, adapting to Python or Node.js."""
+
+    project_type = _detect_project_type(repo_root)
+
+    if project_type == "python":
+        run_cmds = run_commands or []
+        run_cmds_section = "\n".join([f"4. `{cmd}`" for cmd in run_cmds]) if run_cmds else "4. Run the project (check README / entry points)"
+
+        return f"""# Onboarding Guide: {repo_name}
 
 Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M")}
 
 ## Quick Start
+
 1. Create and activate a Python virtual environment
-2. Install dependencies (check requirements files)
-3. Run the project (check README / entry points)
+```bash
+python -m venv venv
+# Windows
+venv\\Scripts\\activate
+# macOS/Linux
+source venv/bin/activate
+```
+
+2. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+3. Run the project
+{run_cmds_section}
 
 ## What this repo likely contains
 - Core logic in `src/` or main package folder
@@ -157,6 +195,58 @@ Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M")}
 ## Suggested first steps for a new developer
 1. Read `README.md`
 2. Identify the entry point (main script / app server)
+3. Run tests (if available)
+4. Trace one key workflow end-to-end
+"""
+
+    elif project_type == "node":
+        run_cmds = run_commands or []
+        run_cmds_md = "\n".join([f"- `{cmd}`" for cmd in run_cmds]) if run_cmds else "- Check `package.json` scripts"
+
+        return f"""# Onboarding Guide: {repo_name}
+
+Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M")}
+
+## Quick Start
+
+1. Install dependencies
+```bash
+npm install
+```
+
+2. Run the project
+{run_cmds_md}
+
+## What this repo likely contains
+- Source code in `src/` or root
+- Configuration via `.env`, `config.*`, or JSON files
+- Tests in `__tests__/` or `test/` (if present)
+
+## Suggested first steps for a new developer
+1. Read `README.md`
+2. Check `package.json` for available scripts
+3. Run tests (if available): `npm test`
+4. Trace one key workflow end-to-end
+"""
+
+    else:
+        return f"""# Onboarding Guide: {repo_name}
+
+Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M")}
+
+## Quick Start
+1. Check for dependency files (requirements.txt, package.json, etc.)
+2. Install dependencies
+3. Run the project (check README / entry points)
+
+## What this repo likely contains
+- Core logic in `src/` or main folder
+- Configuration via `.env`, `config.*`, or YAML/JSON
+- Tests in `tests/` or `test/` (if present)
+
+## Suggested first steps for a new developer
+1. Read `README.md`
+2. Identify the entry point
 3. Run tests (if available)
 4. Trace one key workflow end-to-end
 """
@@ -192,6 +282,7 @@ def is_notebook_ml_repo(repo_root: str, tree: dict) -> bool:
     Returns True if:
     - Any .ipynb file exists in the tree, OR
     - Folders like notebooks/, nbs/, or experiments/ exist
+    - Has requirements.txt with ML-related dependencies (bonus check)
     """
     if not tree:
         return False
@@ -203,7 +294,25 @@ def is_notebook_ml_repo(repo_root: str, tree: dict) -> bool:
 
     # Check for any .ipynb files
     notebooks = _find_notebooks_in_tree(tree)
-    return len(notebooks) > 0
+    if len(notebooks) > 0:
+        return True
+
+    # Check requirements.txt for ML libraries as additional signal
+    if repo_root:
+        req_path = os.path.join(repo_root, "requirements.txt")
+        if os.path.isfile(req_path):
+            try:
+                with open(req_path, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read().lower()
+                    ml_indicators = ["torch", "tensorflow", "keras", "scikit-learn", "sklearn", "pandas", "numpy", "jupyter", "notebook"]
+                    ml_count = sum(1 for lib in ml_indicators if lib in content)
+                    # If 3+ ML libraries found, likely an ML repo even without notebooks
+                    if ml_count >= 3:
+                        return True
+            except Exception:
+                pass
+
+    return False
 
 
 def generate_ml_pipeline_md(repo_name: str, tree: dict) -> str:

@@ -17,7 +17,6 @@ from src.docs import (
     generate_experiments_md,
     generate_results_summary_md
 )
-from src.entry_points import detect_entrypoints
 from src.ingest import clone_repo
 from src.tree_view import build_file_tree
 from src.indexer import build_faiss_index

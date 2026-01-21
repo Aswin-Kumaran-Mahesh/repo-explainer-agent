@@ -54,6 +54,33 @@ def detect_nextjs_entrypoints(repo_root: str):
         "notes": notes
     }
 
+def scan_for_framework_imports(repo_root: str) -> str:
+    """Scan Python files for framework imports to detect FastAPI, Flask, Django."""
+    framework_patterns = {
+        "FastAPI": ["from fastapi import", "import fastapi"],
+        "Flask": ["from flask import", "import flask"],
+        "Django": ["from django", "import django"],
+    }
+
+    # Check common entry files first
+    check_files = ["main.py", "app.py", "server.py", "run.py", "wsgi.py", "asgi.py"]
+
+    for filename in check_files:
+        filepath = os.path.join(repo_root, filename)
+        if os.path.exists(filepath):
+            try:
+                with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read().lower()
+                    for framework, patterns in framework_patterns.items():
+                        for pattern in patterns:
+                            if pattern in content:
+                                return framework
+            except Exception:
+                continue
+
+    return None
+
+
 def detect_python_entrypoints(repo_root: str):
     candidates = []
     for name in ["main.py", "app.py", "server.py", "run.py", "wsgi.py", "asgi.py"]:
@@ -61,16 +88,37 @@ def detect_python_entrypoints(repo_root: str):
         if os.path.exists(path):
             candidates.append(name)
 
+    # Detect specific framework
+    detected_framework = scan_for_framework_imports(repo_root)
+
     notes = []
-    if candidates:
-        notes.append("Detected common Python entrypoint filenames.")
+    run_cmds = []
+
+    if detected_framework == "FastAPI":
+        framework = "FastAPI"
+        notes.append("Detected FastAPI framework. Look for `FastAPI()` app instance and route decorators (`@app.get`, `@app.post`).")
+        run_cmds.append("uvicorn main:app --reload  (or uvicorn app:app --reload)")
+    elif detected_framework == "Flask":
+        framework = "Flask"
+        notes.append("Detected Flask framework. Look for `Flask(__name__)` app instance and route decorators (`@app.route`).")
+        run_cmds.append("flask run  (or python app.py)")
+    elif detected_framework == "Django":
+        framework = "Django"
+        notes.append("Detected Django framework. Look for `manage.py` and `settings.py`.")
+        run_cmds.append("python manage.py runserver")
+        if exists(repo_root, "manage.py"):
+            candidates.append("manage.py")
     else:
-        notes.append("No common Python entrypoint filenames found. Entry may be inside a package or configured via pyproject/cli.")
+        framework = "Python (generic)"
+        if candidates:
+            notes.append("Detected common Python entrypoint filenames.")
+        else:
+            notes.append("No common Python entrypoint filenames found. Entry may be inside a package or configured via pyproject/cli.")
 
     return {
-        "framework": "Python (generic)",
+        "framework": framework,
         "entry_files": candidates,
-        "run_commands": [],
+        "run_commands": run_cmds,
         "notes": notes
     }
 

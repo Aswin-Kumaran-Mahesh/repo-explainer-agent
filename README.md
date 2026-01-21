@@ -4,12 +4,18 @@ A Streamlit-powered tool that analyzes GitHub repositories and generates smart, 
 
 ## Features
 
-- **Smart Repo Detection**: Automatically detects project type (Next.js, ML/Notebook, Python)
+- **Smart Repo Detection**: Automatically detects project type (Next.js, ML/Notebook, Python, Node.js)
+- **Framework Detection**: Identifies FastAPI, Flask, Django, and Next.js with appropriate run commands
 - **Next.js App Router Support**: Generates tailored onboarding docs with routing explanations, component structure, and dev commands
 - **ML Notebook Mode**: For repos with `.ipynb` files, generates ML_PIPELINE.md, EXPERIMENTS.md, and RESULTS_SUMMARY.md
 - **Dependency Diagrams**: Auto-generates Mermaid diagrams for Python and TypeScript/TSX imports
 - **RAG-based Q&A**: Ask questions about the codebase using FAISS-indexed semantic search
-- **Entry Point Detection**: Identifies frameworks (FastAPI, Flask, Next.js) and run commands
+
+## Screenshot
+
+![Repo Explainer UI](screenshot.png)
+
+> Add a screenshot by running the app and saving an image as `screenshot.png`
 
 ## Installation
 
