@@ -13,7 +13,7 @@ A Streamlit-powered tool that analyzes GitHub repositories and generates smart, 
 
 ## Screenshot
 
-_Screenshot coming soon._
+![Repo Explainer UI](screenshot.png)
 
 ## Installation
 
