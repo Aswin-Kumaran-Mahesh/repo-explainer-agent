@@ -13,9 +13,7 @@ A Streamlit-powered tool that analyzes GitHub repositories and generates smart, 
 
 ## Screenshot
 
-![Repo Explainer UI](screenshot.png)
-
-<!-- Screenshot should show the Streamlit app UI with repo analysis results -->
+_Screenshot coming soon._
 
 ## Installation
 
