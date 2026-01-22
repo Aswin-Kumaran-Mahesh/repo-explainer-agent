@@ -13,9 +13,7 @@ A Streamlit-powered tool that analyzes GitHub repositories and generates smart, 
 
 ## Screenshot
 
-![Repo Explainer UI](screenshot.png)
-
-> Add a screenshot by running the app and saving an image as `screenshot.png`
+Screenshot coming soon.
 
 ## Installation
 
