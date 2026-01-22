@@ -81,15 +81,50 @@ def scan_for_framework_imports(repo_root: str) -> str:
     return None
 
 
+def find_entry_files_recursive(repo_root: str, search_dirs: list, filenames: list) -> list:
+    """Search for specific filenames recursively under given directories."""
+    found = []
+    for search_dir in search_dirs:
+        dir_path = os.path.join(repo_root, search_dir)
+        if not os.path.isdir(dir_path):
+            continue
+        for root, dirs, files in os.walk(dir_path):
+            # Skip hidden directories and common non-source dirs
+            dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ('__pycache__', 'node_modules', '.git')]
+            for filename in filenames:
+                if filename in files:
+                    rel_path = os.path.relpath(os.path.join(root, filename), repo_root)
+                    found.append(rel_path.replace("\\", "/"))
+    return found
+
+
 def detect_python_entrypoints(repo_root: str):
     candidates = []
+
+    # Check root-level entry files
     for name in ["main.py", "app.py", "server.py", "run.py", "wsgi.py", "asgi.py"]:
         path = os.path.join(repo_root, name)
         if os.path.exists(path):
             candidates.append(name)
 
+    # Search for __main__.py, wsgi.py, asgi.py under src/** and tests/**
+    deep_entry_files = ["__main__.py", "wsgi.py", "asgi.py"]
+    search_dirs = ["src", "tests"]
+    deep_found = find_entry_files_recursive(repo_root, search_dirs, deep_entry_files)
+    candidates.extend(deep_found)
+
     # Detect specific framework
     detected_framework = scan_for_framework_imports(repo_root)
+
+    # Check if this is a library/framework (pyproject.toml + src/<pkg>/__init__.py)
+    is_library = False
+    has_pyproject = exists(repo_root, "pyproject.toml")
+    if has_pyproject and os.path.isdir(os.path.join(repo_root, "src")):
+        for item in os.listdir(os.path.join(repo_root, "src")):
+            pkg_init = os.path.join(repo_root, "src", item, "__init__.py")
+            if os.path.isfile(pkg_init):
+                is_library = True
+                break
 
     notes = []
     run_cmds = []
@@ -108,6 +143,18 @@ def detect_python_entrypoints(repo_root: str):
         run_cmds.append("python manage.py runserver")
         if exists(repo_root, "manage.py"):
             candidates.append("manage.py")
+    elif is_library:
+        framework = "Python Library/Framework"
+        notes.append("Detected Python library/framework structure (pyproject.toml + src/<package>/).")
+        run_cmds.append("pip install -e .")
+        run_cmds.append("python -m pytest")
+        # Check for __main__.py to add run command
+        for c in candidates:
+            if "__main__.py" in c:
+                pkg_name = c.split("/")[1] if "/" in c else None
+                if pkg_name:
+                    run_cmds.append(f"python -m {pkg_name}")
+                break
     else:
         framework = "Python (generic)"
         if candidates:

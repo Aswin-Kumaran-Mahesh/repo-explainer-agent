@@ -139,7 +139,7 @@ Next.js App Router uses **file-based routing**:
 
 
 def _detect_project_type(repo_root: str) -> str:
-    """Detect if project is Python, Node.js, or unknown."""
+    """Detect if project is Python Library, Python App, Node.js, or unknown."""
     if not repo_root:
         return "unknown"
 
@@ -147,6 +147,16 @@ def _detect_project_type(repo_root: str) -> str:
     has_requirements = os.path.isfile(os.path.join(repo_root, "requirements.txt"))
     has_pyproject = os.path.isfile(os.path.join(repo_root, "pyproject.toml"))
     has_setup_py = os.path.isfile(os.path.join(repo_root, "setup.py"))
+
+    # Check for Python library/framework pattern: pyproject.toml + src/<package>/__init__.py
+    if has_pyproject:
+        src_path = os.path.join(repo_root, "src")
+        if os.path.isdir(src_path):
+            # Look for any package with __init__.py under src/
+            for item in os.listdir(src_path):
+                pkg_init = os.path.join(src_path, item, "__init__.py")
+                if os.path.isfile(pkg_init):
+                    return "python_library"
 
     if has_requirements or has_pyproject or has_setup_py:
         return "python"
@@ -156,12 +166,82 @@ def _detect_project_type(repo_root: str) -> str:
 
 
 def _generate_generic_onboarding(repo_name: str, repo_root: str = None, run_commands: list = None) -> str:
-    """Generate generic onboarding guide, adapting to Python or Node.js."""
+    """Generate generic onboarding guide, adapting to Python Library, Python App, or Node.js."""
 
     project_type = _detect_project_type(repo_root)
 
+    if project_type == "python_library":
+        # Python library/framework mode
+        has_docs = repo_root and os.path.isdir(os.path.join(repo_root, "docs"))
+        docs_section = ""
+        if has_docs:
+            docs_section = """
+## Documentation
+
+This project has a `docs/` folder. To build documentation locally:
+```bash
+cd docs
+pip install -r requirements.txt  # if docs/requirements.txt exists
+make html  # or sphinx-build -b html . _build/html
+```
+"""
+
+        return f"""# Onboarding Guide: {repo_name}
+
+Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M")}
+
+This is a **Python Library/Framework** project.
+
+## Quick Start
+
+1. Create and activate a Python virtual environment
+```bash
+python -m venv venv
+# Windows
+venv\\Scripts\\activate
+# macOS/Linux
+source venv/bin/activate
+```
+
+2. Install the package in editable/development mode
+```bash
+pip install -e .
+```
+
+3. Run tests
+```bash
+python -m pytest
+```
+
+## Project Structure
+
+- `src/<package>/` - Main package source code
+- `tests/` - Test suite
+- `pyproject.toml` - Project metadata and dependencies
+- `docs/` - Documentation (if present)
+
+## What this repo likely contains
+- Core library code in `src/<package>/`
+- Public API exposed via `__init__.py`
+- CLI entry point in `__main__.py` (if present)
+- Tests in `tests/`
+{docs_section}
+## Suggested first steps for a new developer
+1. Read `README.md`
+2. Review `src/<package>/__init__.py` to understand the public API
+3. Run `python -m pytest` to ensure tests pass
+4. Explore the test files to understand usage patterns
+"""
+
     if project_type == "python":
         run_cmds = run_commands or []
+        has_requirements = repo_root and os.path.isfile(os.path.join(repo_root, "requirements.txt"))
+
+        if has_requirements:
+            install_cmd = "pip install -r requirements.txt"
+        else:
+            install_cmd = "pip install -e .  # or check pyproject.toml"
+
         run_cmds_section = "\n".join([f"4. `{cmd}`" for cmd in run_cmds]) if run_cmds else "4. Run the project (check README / entry points)"
 
         return f"""# Onboarding Guide: {repo_name}
@@ -181,7 +261,7 @@ source venv/bin/activate
 
 2. Install dependencies
 ```bash
-pip install -r requirements.txt
+{install_cmd}
 ```
 
 3. Run the project
