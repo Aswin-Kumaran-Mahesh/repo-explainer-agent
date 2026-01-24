@@ -103,17 +103,33 @@ if st.session_state.tree:
                 results = generate_results_summary_md(repo_name, tree)
                 files = generate_files_overview(tree)
 
+                # Save to disk
                 write_file(os.path.join(out_dir, "ML_PIPELINE.md"), ml_pipeline)
                 write_file(os.path.join(out_dir, "EXPERIMENTS.md"), experiments)
                 write_file(os.path.join(out_dir, "RESULTS_SUMMARY.md"), results)
                 write_file(os.path.join(out_dir, "FILES_OVERVIEW.md"), files)
 
-                st.success(f"ML Notebook docs generated in: {out_dir}")
-                st.write("Generated files:")
-                st.write("- ML_PIPELINE.md")
-                st.write("- EXPERIMENTS.md")
-                st.write("- RESULTS_SUMMARY.md")
-                st.write("- FILES_OVERVIEW.md")
+                st.success(f"ML Notebook docs generated!")
+
+                # Display in tabs
+                tab1, tab2, tab3, tab4 = st.tabs(["ML Pipeline", "Experiments", "Results Summary", "Files Overview"])
+
+                with tab1:
+                    st.markdown(ml_pipeline)
+                    st.download_button("Download ML_PIPELINE.md", ml_pipeline, "ML_PIPELINE.md", mime="text/markdown")
+
+                with tab2:
+                    st.markdown(experiments)
+                    st.download_button("Download EXPERIMENTS.md", experiments, "EXPERIMENTS.md", mime="text/markdown")
+
+                with tab3:
+                    st.markdown(results)
+                    st.download_button("Download RESULTS_SUMMARY.md", results, "RESULTS_SUMMARY.md", mime="text/markdown")
+
+                with tab4:
+                    st.markdown(files)
+                    st.download_button("Download FILES_OVERVIEW.md", files, "FILES_OVERVIEW.md", mime="text/markdown")
+
             else:
                 # Standard onboarding docs
                 entry_info = detect_entrypoints(repo_root)
@@ -130,15 +146,27 @@ if st.session_state.tree:
                 arch = generate_architecture_md(repo_name, repo_root)
                 files = generate_files_overview(tree)
 
+                # Save to disk
                 write_file(os.path.join(out_dir, "ONBOARDING.md"), onboarding)
                 write_file(os.path.join(out_dir, "ARCHITECTURE.md"), arch)
                 write_file(os.path.join(out_dir, "FILES_OVERVIEW.md"), files)
 
-                st.success(f"Docs generated in: {out_dir}")
-                st.write("Generated files:")
-                st.write("- ONBOARDING.md")
-                st.write("- ARCHITECTURE.md")
-                st.write("- FILES_OVERVIEW.md")
+                st.success(f"Docs generated!")
+
+                # Display in tabs
+                tab1, tab2, tab3 = st.tabs(["Onboarding", "Architecture", "Files Overview"])
+
+                with tab1:
+                    st.markdown(onboarding)
+                    st.download_button("Download ONBOARDING.md", onboarding, "ONBOARDING.md", mime="text/markdown")
+
+                with tab2:
+                    st.markdown(arch)
+                    st.download_button("Download ARCHITECTURE.md", arch, "ARCHITECTURE.md", mime="text/markdown")
+
+                with tab3:
+                    st.markdown(files)
+                    st.download_button("Download FILES_OVERVIEW.md", files, "FILES_OVERVIEW.md", mime="text/markdown")
 
 
 
@@ -204,8 +232,11 @@ if st.session_state.tree:
             md = render_routes_md(routes)
 
             write_file(os.path.join(out_dir, "ROUTES_COMPONENTS.md"), md)
-            st.success(f"Route map generated in: {out_dir}")
-            st.write("- ROUTES_COMPONENTS.md")
+            st.success(f"Route map generated!")
+
+            # Display content
+            st.markdown(md)
+            st.download_button("Download ROUTES_COMPONENTS.md", md, "ROUTES_COMPONENTS.md", mime="text/markdown")
 
 
 
